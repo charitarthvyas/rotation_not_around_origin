@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3-Step Non-Origin Rotation Visualizer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- p5.js library for graphic rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <!-- Fonts and Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            min-height: 100vh;
+            margin: 0;
+            padding: 16px;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 1024px) {
+            #app-container {
+                flex-direction: row;
+            }
+        }
+
+        .card {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .math-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+
+        .math-table th {
+            background-color: #0f172a;
+            color: #38bdf8;
+            padding: 12px 10px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #334155;
+        }
+
+        .math-table td {
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #334155;
+            text-align: center;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .math-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .math-table tr.highlight-row {
+            background-color: rgba(16, 185, 129, 0.15);
+            font-weight: bold;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: none;
+            user-select: none;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-preset {
+            background-color: #334155;
+            color: #f1f5f9;
+            border: 1px solid #475569;
+        }
+        .btn-preset:hover {
+            background-color: #0284c7;
+            color: #ffffff;
+            border-color: #38bdf8;
+        }
+
+        .btn-primary { background-color: #2563eb; color: white; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+
+        .btn-accent { background-color: #0d9488; color: white; }
+        .btn-accent:hover { background-color: #0f766e; }
+
+        .btn-step {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            flex: 1;
+            padding: 10px 4px;
+            font-size: 0.75rem;
+        }
+        .btn-step.active {
+            background-color: #0284c7;
+            color: #ffffff;
+            border-color: #38bdf8;
+            font-weight: 800;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+        }
+
+        .input-box {
+            background-color: #0f172a;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            color: #38bdf8;
+            padding: 6px 8px;
+            width: 52px;
+            text-align: center;
+            font-family: 'Fira Code', monospace;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .input-box:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
+        /* Toggle checkbox style */
+        .toggle-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+
+        .toggle-chip input {
+            display: none;
+        }
+
+        .toggle-chip.active {
+            border-color: #38bdf8;
+            background-color: #1e293b;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="w-full max-w-7xl mx-auto mb-4 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 text-2xl shadow-md">
+                <i class="fa-solid fa-rotate"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-extrabold text-white tracking-tight">Rotation Visualizer</h1>
+                <p class="text-xs text-sky-400 font-semibold">3-Step Method for Rotations Not Around (0, 0)</p>
+            </div>
+        </div>
+
+        <!-- Grade 8-9 Classroom Presets -->
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Classroom Examples:</span>
+            <button onclick="loadPreset(90)" class="btn btn-preset text-xs py-2 px-3">
+                <i class="fa-solid fa-play text-sky-400"></i> 90° Turn at A(1, 2)
+            </button>
+            <button onclick="loadPreset(180)" class="btn btn-preset text-xs py-2 px-3">
+                <i class="fa-solid fa-play text-sky-400"></i> 180° Turn at A(1, 2)
+            </button>
+            <button onclick="loadPreset(270)" class="btn btn-preset text-xs py-2 px-3">
+                <i class="fa-solid fa-play text-sky-400"></i> 270° Turn at A(1, 2)
+            </button>
+        </div>
+    </header>
+
+    <div id="app-container">
+        
+        <!-- Left Panel: Controls, Settings & Working Table -->
+        <div class="w-full lg:w-5/12 flex flex-col gap-4">
+            
+            <!-- Shape & COR Input Controls -->
+            <div class="card">
+                <h2 class="text-xs font-bold text-sky-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> 1. Setup Triangle & Center of Rotation
+                </h2>
+
+                <!-- Triangle Vertices Inputs -->
+                <div class="grid grid-cols-3 gap-2 mb-4 text-xs font-semibold">
+                    <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-center">
+                        <span class="text-sky-400 block mb-1 font-bold">Vertex A</span>
+                        (<input type="number" id="ax" value="1" class="input-box" onchange="updateMath()">,
+                        <input type="number" id="ay" value="2" class="input-box" onchange="updateMath()">)
+                    </div>
+                    <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-center">
+                        <span class="text-indigo-400 block mb-1 font-bold">Vertex B</span>
+                        (<input type="number" id="bx" value="5" class="input-box" onchange="updateMath()">,
+                        <input type="number" id="by" value="2" class="input-box" onchange="updateMath()">)
+                    </div>
+                    <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-center">
+                        <span class="text-purple-400 block mb-1 font-bold">Vertex C</span>
+                        (<input type="number" id="cx" value="5" class="input-box" onchange="updateMath()">,
+                        <input type="number" id="cy" value="6" class="input-box" onchange="updateMath()">)
+                    </div>
+                </div>
+
+                <!-- Center of Rotation & Angle Selectors -->
+                <div class="grid grid-cols-2 gap-3 mb-2">
+                    <div>
+                        <label class="text-xs font-bold text-amber-400 block mb-1">Center of Rotation (COR):</label>
+                        <select id="cor-select" onchange="updateMath()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-bold text-white focus:outline-none focus:border-sky-400">
+                            <option value="A">Point A (1, 2)</option>
+                            <option value="B">Point B (5, 2)</option>
+                            <option value="C">Point C (5, 6)</option>
+                            <option value="CUSTOM">Custom Center Point</option>
+                        </select>
+                        <div id="custom-cor-inputs" class="hidden flex gap-2 mt-2">
+                            <input type="number" id="cor-x" value="1" placeholder="X" class="input-box w-1/2" onchange="updateMath()">
+                            <input type="number" id="cor-y" value="2" placeholder="Y" class="input-box w-1/2" onchange="updateMath()">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-sky-400 block mb-1">Counterclockwise Angle:</label>
+                        <select id="angle-select" onchange="updateMath()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-bold text-white focus:outline-none focus:border-sky-400">
+                            <option value="90">90° Counterclockwise</option>
+                            <option value="180">180° (Half Turn)</option>
+                            <option value="270">270° Counterclockwise (90° CW)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabular Working Card -->
+            <div class="card">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-table"></i> 2. Step-by-Step Calculation Table
+                    </h2>
+                    <span id="rule-badge" class="text-xs bg-sky-950 text-sky-300 border border-sky-500/30 px-2 py-1 rounded-md code-font font-bold">
+                        Rule: (x, y) → (-y, x)
+                    </span>
+                </div>
+
+                <!-- Teacher Working Table -->
+                <div class="overflow-x-auto">
+                    <table class="math-table" id="working-table">
+                        <thead>
+                            <tr>
+                                <th>Step / Operation</th>
+                                <th>A (COR)</th>
+                                <th>B</th>
+                                <th>C</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- Populated dynamically via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Explanation Box -->
+                <div class="mt-3 bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-xs">
+                    <span class="text-sky-400 font-bold block mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-lightbulb"></i> Line of Reasoning:
+                    </span>
+                    <p id="reasoning-text" class="text-slate-300 leading-relaxed font-medium">
+                        Loading calculation reasoning...
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Panel: Interactive Visualizer Canvas -->
+        <div class="w-full lg:w-7/12 flex flex-col gap-4">
+            <div class="card flex flex-col items-center">
+                
+                <!-- Stage Stepper Tabs Header -->
+                <div class="w-full mb-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Transformation Stage Progress:</span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="prevStage()" class="btn bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs py-1 px-2.5">
+                                <i class="fa-solid fa-chevron-left"></i> Prev
+                            </button>
+                            <button onclick="nextStage()" class="btn bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs py-1 px-2.5">
+                                Next <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step Stepper Buttons -->
+                    <div class="grid grid-cols-4 gap-1.5">
+                        <button onclick="setStage(0)" id="stage-btn-0" class="btn btn-step active">1. Start</button>
+                        <button onclick="setStage(1)" id="stage-btn-1" class="btn btn-step">2. Shift COR</button>
+                        <button onclick="setStage(2)" id="stage-btn-2" class="btn btn-step">3. Rotate</button>
+                        <button onclick="setStage(3)" id="stage-btn-3" class="btn btn-step">4. Shift Back</button>
+                    </div>
+                </div>
+
+                <!-- Main Graphic Canvas Mount -->
+                <div id="canvas-container" class="w-full flex justify-center bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-inner relative">
+                    <!-- p5.js canvas mounts here -->
+                </div>
+
+                <!-- Layer Visibility Toggles -->
+                <div class="w-full flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-800">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-bold text-slate-400">Show Shapes:</span>
+                        <label class="toggle-chip active" id="chip-preimage">
+                            <input type="checkbox" id="show-preimage" checked onchange="redrawCanvas()">
+                            <span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span>
+                            <span class="text-slate-200">Start (ABC)</span>
+                        </label>
+                        <label class="toggle-chip active" id="chip-shifted">
+                            <input type="checkbox" id="show-shifted" checked onchange="redrawCanvas()">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
+                            <span class="text-slate-200">Shifted to (0,0)</span>
+                        </label>
+                        <label class="toggle-chip active" id="chip-rotated">
+                            <input type="checkbox" id="show-rotated" checked onchange="redrawCanvas()">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-400 inline-block"></span>
+                            <span class="text-slate-200">Rotated at (0,0)</span>
+                        </label>
+                        <label class="toggle-chip active" id="chip-final">
+                            <input type="checkbox" id="show-final" checked onchange="redrawCanvas()">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
+                            <span class="text-slate-200">Final (A'B'C')</span>
+                        </label>
+                    </div>
+
+                    <button onclick="playAnimation()" class="btn btn-accent text-xs py-1.5 px-3">
+                        <i class="fa-solid fa-circle-play"></i> Play Step Animation
+                    </button>
+                </div>
+
+                <!-- Stage Description Bar -->
+                <div class="w-full mt-3 p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                        <span class="font-bold text-sky-400">Current View:</span>
+                        <span id="stage-description" class="ml-1 text-white font-medium">Preimage Shape (Triangle ABC)</span>
+                    </div>
+                    <div class="code-font text-emerald-400 font-bold bg-slate-950 px-2.5 py-1 rounded border border-emerald-500/20" id="final-result-summary">
+                        A'(1, 2)  B'(1, 6)  C'(-3, 6)
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Subtle Watermark -->
+    <div class="fixed bottom-2 right-3 text-[11px] text-slate-500/70 bg-slate-900/60 backdrop-blur-sm px-2.5 py-1 rounded-md border border-slate-800/50 select-none z-50 font-medium tracking-wide">
+        Developed by <span class="text-slate-400 font-semibold">Charitarth Vyas</span> using <span class="text-slate-400 font-semibold">Gemini 3.6</span>
+    </div>
+
+    <script>
+        // Active Stage: 0=Start, 1=Shifted to Origin, 2=Rotated at Origin, 3=Shifted Back (Final Image)
+        let currentStage = 0;
+        let isAnimating = false;
+        let animProgress = 0;
+        let animStage = 0;
+
+        // Vertices state
+        let ptA = { x: 1, y: 2 };
+        let ptB = { x: 5, y: 2 };
+        let ptC = { x: 5, y: 6 };
+        
+        let cor = { x: 1, y: 2 };
+        let corLabel = "A";
+        let angle = 90;
+
+        // Step coordinates
+        let shiftedA, shiftedB, shiftedC;
+        let rotatedA, rotatedB, rotatedC;
+        let finalA, finalB, finalC;
+
+        // Canvas Grid scale
+        let gridExtent = 10;
+        let tileSize = 35;
+
+        function setup() {
+            let container = document.getElementById('canvas-container');
+            let w = container.offsetWidth || 550;
+            
+            let canvas = createCanvas(w, w);
+            canvas.parent('canvas-container');
+            
+            tileSize = w / (gridExtent * 2);
+            updateMath();
+        }
+
+        function windowResized() {
+            let container = document.getElementById('canvas-container');
+            let w = container.offsetWidth || 550;
+            tileSize = w / (gridExtent * 2);
+            resizeCanvas(w, w);
+        }
+
+        function loadPreset(selectedAngle) {
+            document.getElementById('ax').value = 1;
+            document.getElementById('ay').value = 2;
+            document.getElementById('bx').value = 5;
+            document.getElementById('by').value = 2;
+            document.getElementById('cx').value = 5;
+            document.getElementById('cy').value = 6;
+            document.getElementById('cor-select').value = "A";
+            document.getElementById('angle-select').value = selectedAngle;
+            document.getElementById('custom-cor-inputs').classList.add('hidden');
+            
+            setStage(0);
+            updateMath();
+        }
+
+        function setStage(stage) {
+            currentStage = stage;
+            for (let i = 0; i <= 3; i++) {
+                let btn = document.getElementById(`stage-btn-${i}`);
+                if (btn) {
+                    if (i === stage) {
+                        btn.className = "btn btn-step active";
+                    } else {
+                        btn.className = "btn btn-step";
+                    }
+                }
+            }
+
+            let desc = [
+                "Original triangle ABC before transformation.",
+                "Step 1: Shift the Center of Rotation to (0,0) using Translation T(" + (-cor.x) + ", " + (-cor.y) + ").",
+                "Step 2: Apply the standard origin rotation rule for " + angle + "° counterclockwise around (0,0).",
+                "Step 3: Apply reverse Translation T(+" + cor.x + ", +" + cor.y + ") to shift everything back."
+            ];
+            document.getElementById('stage-description').innerText = desc[stage];
+            redrawCanvas();
+        }
+
+        function prevStage() {
+            if (currentStage > 0) setStage(currentStage - 1);
+        }
+
+        function nextStage() {
+            if (currentStage < 3) setStage(currentStage + 1);
+        }
+
+        function playAnimation() {
+            if (isAnimating) return;
+            isAnimating = true;
+            animStage = 1;
+            animProgress = 0;
+            setStage(1);
+        }
+
+        function updateMath() {
+            ptA.x = parseFloat(document.getElementById('ax').value) || 0;
+            ptA.y = parseFloat(document.getElementById('ay').value) || 0;
+            ptB.x = parseFloat(document.getElementById('bx').value) || 0;
+            ptB.y = parseFloat(document.getElementById('by').value) || 0;
+            ptC.x = parseFloat(document.getElementById('cx').value) || 0;
+            ptC.y = parseFloat(document.getElementById('cy').value) || 0;
+
+            let corSel = document.getElementById('cor-select').value;
+            let customDiv = document.getElementById('custom-cor-inputs');
+
+            if (corSel === "A") {
+                cor = { x: ptA.x, y: ptA.y };
+                corLabel = "A";
+                customDiv.classList.add('hidden');
+            } else if (corSel === "B") {
+                cor = { x: ptB.x, y: ptB.y };
+                corLabel = "B";
+                customDiv.classList.add('hidden');
+            } else if (corSel === "C") {
+                cor = { x: ptC.x, y: ptC.y };
+                corLabel = "C";
+                customDiv.classList.add('hidden');
+            } else {
+                customDiv.classList.remove('hidden');
+                cor.x = parseFloat(document.getElementById('cor-x').value) || 0;
+                cor.y = parseFloat(document.getElementById('cor-y').value) || 0;
+                corLabel = "COR";
+            }
+
+            angle = parseInt(document.getElementById('angle-select').value) || 90;
+
+            // Step 1: Shift COR to origin T(-cor.x, -cor.y)
+            let shiftX = -cor.x;
+            let shiftY = -cor.y;
+
+            shiftedA = { x: ptA.x + shiftX, y: ptA.y + shiftY };
+            shiftedB = { x: ptB.x + shiftX, y: ptB.y + shiftY };
+            shiftedC = { x: ptC.x + shiftX, y: ptC.y + shiftY };
+
+            // Step 2: Apply Origin Rotation Rule
+            let ruleText = "";
+            if (angle === 90) {
+                ruleText = "(x, y) → (-y, x)";
+                rotatedA = { x: -shiftedA.y, y: shiftedA.x };
+                rotatedB = { x: -shiftedB.y, y: shiftedB.x };
+                rotatedC = { x: -shiftedC.y, y: shiftedC.x };
+            } else if (angle === 180) {
+                ruleText = "(x, y) → (-x, -y)";
+                rotatedA = { x: -shiftedA.x, y: -shiftedA.y };
+                rotatedB = { x: -shiftedB.x, y: -shiftedB.y };
+                rotatedC = { x: -shiftedC.x, y: -shiftedC.y };
+            } else if (angle === 270) {
+                ruleText = "(x, y) → (y, -x)";
+                rotatedA = { x: shiftedA.y, y: -shiftedA.x };
+                rotatedB = { x: shiftedB.y, y: -shiftedB.x };
+                rotatedC = { x: shiftedC.y, y: -shiftedC.x };
+            }
+
+            document.getElementById('rule-badge').innerText = "Rule: " + ruleText;
+
+            // Step 3: Reverse Translation T(+cor.x, +cor.y)
+            let revX = cor.x;
+            let revY = cor.y;
+
+            finalA = { x: rotatedA.x + revX, y: rotatedA.y + revY };
+            finalB = { x: rotatedB.x + revX, y: rotatedB.y + revY };
+            finalC = { x: rotatedC.x + revX, y: rotatedC.y + revY };
+
+            // Render exact Teacher Table Format
+            let tbody = document.getElementById('table-body');
+            let formatNum = (num) => (num >= 0 ? `+${num}` : `${num}`);
+
+            tbody.innerHTML = `
+                <tr>
+                    <td class="text-sky-400 font-bold text-left">Preimage</td>
+                    <td>(${ptA.x}, ${ptA.y})</td>
+                    <td>(${ptB.x}, ${ptB.y})</td>
+                    <td>(${ptC.x}, ${ptC.y})</td>
+                </tr>
+                <tr>
+                    <td class="text-amber-400 font-bold text-left">Step 1: Translation</td>
+                    <td>(${formatNum(shiftX)}, ${formatNum(shiftY)})</td>
+                    <td>(${formatNum(shiftX)}, ${formatNum(shiftY)})</td>
+                    <td>(${formatNum(shiftX)}, ${formatNum(shiftY)})</td>
+                </tr>
+                <tr class="bg-amber-950/20">
+                    <td class="text-amber-300 font-bold text-left">Shifted to (0,0)</td>
+                    <td>(${shiftedA.x}, ${shiftedA.y})</td>
+                    <td>(${shiftedB.x}, ${shiftedB.y})</td>
+                    <td>(${shiftedC.x}, ${shiftedC.y})</td>
+                </tr>
+                <tr>
+                    <td class="text-purple-400 font-bold text-left">Step 2: Apply Rule</td>
+                    <td colspan="3" class="text-purple-300 font-bold">${ruleText}</td>
+                </tr>
+                <tr class="bg-purple-950/20">
+                    <td class="text-purple-300 font-bold text-left">Rotated at (0,0)</td>
+                    <td>(${rotatedA.x}, ${rotatedA.y})</td>
+                    <td>(${rotatedB.x}, ${rotatedB.y})</td>
+                    <td>(${rotatedC.x}, ${rotatedC.y})</td>
+                </tr>
+                <tr>
+                    <td class="text-emerald-400 font-bold text-left">Step 3: Reverse Shift</td>
+                    <td>(${formatNum(revX)}, ${formatNum(revY)})</td>
+                    <td>(${formatNum(revX)}, ${formatNum(revY)})</td>
+                    <td>(${formatNum(revX)}, ${formatNum(revY)})</td>
+                </tr>
+                <tr class="highlight-row text-emerald-300 font-bold">
+                    <td class="text-left">Final Image</td>
+                    <td>A'(${finalA.x}, ${finalA.y})</td>
+                    <td>B'(${finalB.x}, ${finalB.y})</td>
+                    <td>C'(${finalC.x}, ${finalC.y})</td>
+                </tr>
+            `;
+
+            document.getElementById('reasoning-text').innerText = 
+                `To rotate ${angle}° counterclockwise about point (${cor.x}, ${cor.y}):\n` +
+                `1. Translate all vertices by T(${shiftX}, ${shiftY}) so the center of rotation moves to (0,0).\n` +
+                `2. Apply the origin rotation rule ${ruleText}.\n` +
+                `3. Shift back using reverse translation T(${formatNum(revX)}, ${formatNum(revY)}).\n` +
+                `Result: A'(${finalA.x}, ${finalA.y}), B'(${finalB.x}, ${finalB.y}), C'(${finalC.x}, ${finalC.y}).`;
+
+            document.getElementById('final-result-summary').innerText = 
+                `A'(${finalA.x}, ${finalA.y})   B'(${finalB.x}, ${finalB.y})   C'(${finalC.x}, ${finalC.y})`;
+
+            redrawCanvas();
+        }
+
+        function redrawCanvas() {
+            redraw();
+        }
+
+        function draw() {
+            background(2, 6, 23);
+
+            translate(width / 2, height / 2);
+            scale(1, -1);
+
+            drawGrid();
+
+            // Handle animation stepping
+            if (isAnimating) {
+                animProgress += 0.025;
+                if (animProgress >= 1) {
+                    animProgress = 0;
+                    animStage++;
+                    if (animStage > 3) {
+                        isAnimating = false;
+                        setStage(3);
+                    } else {
+                        setStage(animStage);
+                    }
+                }
+            }
+
+            // Layer visibility checks
+            let showPre = document.getElementById('show-preimage').checked;
+            let showShift = document.getElementById('show-shifted').checked;
+            let showRot = document.getElementById('show-rotated').checked;
+            let showFin = document.getElementById('show-final').checked;
+
+            // Stage 0: Preimage
+            if (showPre && (currentStage >= 0)) {
+                drawTriangle([ptA, ptB, ptC], [56, 189, 248, 160], [125, 211, 252], "", false);
+            }
+
+            // Stage 1: Shifted to origin
+            if (showShift && (currentStage >= 1)) {
+                drawTriangle([shiftedA, shiftedB, shiftedC], [245, 158, 11, 160], [252, 211, 77], "*", true);
+            }
+
+            // Stage 2: Rotated at origin
+            if (showRot && (currentStage >= 2)) {
+                drawTriangle([rotatedA, rotatedB, rotatedC], [168, 85, 247, 160], [216, 180, 254], "r", true);
+            }
+
+            // Stage 3: Final image
+            if (showFin && (currentStage >= 3)) {
+                drawTriangle([finalA, finalB, finalC], [16, 185, 129, 210], [110, 231, 183], "'", false);
+            }
+
+            // Draw Center of Rotation point
+            drawCOR();
+        }
+
+        function drawGrid() {
+            stroke(30, 41, 59);
+            strokeWeight(1);
+
+            for (let i = -gridExtent; i <= gridExtent; i++) {
+                line(i * tileSize, -gridExtent * tileSize, i * tileSize, gridExtent * tileSize);
+                line(-gridExtent * tileSize, i * tileSize, gridExtent * tileSize, i * tileSize);
+            }
+
+            // Main Cartesian Axes
+            stroke(56, 189, 248, 180);
+            strokeWeight(2);
+            line(0, -gridExtent * tileSize, 0, gridExtent * tileSize);
+            line(-gridExtent * tileSize, 0, gridExtent * tileSize, 0);
+
+            // Numbers on Axes
+            push();
+            scale(1, -1);
+            fill(148, 163, 184);
+            noStroke();
+            textSize(10);
+            textAlign(CENTER, CENTER);
+            for (let i = -gridExtent; i <= gridExtent; i += 2) {
+                if (i !== 0) {
+                    text(i, i * tileSize, 12);
+                    text(i, -12, -i * tileSize);
+                }
+            }
+            pop();
+        }
+
+        function drawTriangle(pts, fillColor, strokeColor, labelSuffix = "", isDashed = false) {
+            push();
+            fill(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
+            stroke(strokeColor[0], strokeColor[1], strokeColor[2]);
+            strokeWeight(2.5);
+
+            beginShape();
+            for (let p of pts) {
+                vertex(p.x * tileSize, p.y * tileSize);
+            }
+            endShape(CLOSE);
+
+            // Draw vertices and coordinates
+            let labels = ["A", "B", "C"];
+            for (let i = 0; i < pts.length; i++) {
+                let p = pts[i];
+                fill(255);
+                noStroke();
+                circle(p.x * tileSize, p.y * tileSize, 6);
+
+                push();
+                scale(1, -1);
+                fill(strokeColor[0], strokeColor[1], strokeColor[2]);
+                textSize(11);
+                textStyle(BOLD);
+                textAlign(LEFT, BOTTOM);
+                let label = labels[i] + labelSuffix;
+                text(`${label}(${p.x}, ${p.y})`, p.x * tileSize + 6, -p.y * tileSize - 6);
+                pop();
+            }
+            pop();
+        }
+
+        function drawCOR() {
+            push();
+            // COR highlight marker
+            fill(239, 68, 68);
+            stroke(255);
+            strokeWeight(2);
+            circle(cor.x * tileSize, cor.y * tileSize, 10);
+
+            push();
+            scale(1, -1);
+            fill(252, 165, 165);
+            textSize(11);
+            textStyle(BOLD);
+            textAlign(RIGHT, TOP);
+            text(`COR (${cor.x}, ${cor.y})`, cor.x * tileSize - 8, -cor.y * tileSize + 14);
+            pop();
+            pop();
+        }
+    </script>
+</body>
+</html>
