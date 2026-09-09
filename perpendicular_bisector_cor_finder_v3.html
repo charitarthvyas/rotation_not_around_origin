@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finding Center of Rotation & Angle - Geometric Simulation (Version 3)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- p5.js for canvas rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top center, #1e293b 0%, #0f172a 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .glass-card {
+            background-color: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 22px;
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.5);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: none;
+            user-select: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-step {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            flex: 1;
+            padding: 10px 8px;
+            font-size: 0.78rem;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .btn-step.active {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            border-color: #38bdf8;
+            font-weight: 800;
+            box-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
+        }
+
+        .toggle-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background-color: #090d16;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+
+        .toggle-chip input {
+            display: none;
+        }
+
+        .toggle-chip.active {
+            border-color: #38bdf8;
+            background-color: #1e293b;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+        }
+
+        #canvas-container canvas {
+            border-radius: 16px;
+        }
+
+        .slider-thumb::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="w-full max-w-7xl mx-auto mb-5 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+        <div class="flex items-center gap-4">
+            <div class="w-13 h-13 p-3 rounded-2xl bg-gradient-to-tr from-sky-500/30 to-blue-600/30 border border-sky-400/50 flex items-center justify-center text-sky-400 text-2xl shadow-lg shadow-sky-500/10">
+                <i class="fa-solid fa-maximize"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-extrabold text-white tracking-tight flex items-center gap-3">
+                    Center of Rotation & Angle Finder
+                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Version 3.0</span>
+                </h1>
+                <p class="text-xs text-sky-400 font-semibold mt-0.5">Zoomable, Pannable, Independent Preimage & Image Manipulation</p>
+            </div>
+        </div>
+
+        <!-- Quick Presets -->
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1"><i class="fa-solid fa-bookmark text-amber-400"></i> Angle Presets:</span>
+            <button onclick="setAnglePreset(60)" class="btn bg-slate-800 text-slate-200 hover:bg-sky-600 border border-slate-700 text-xs py-1.5 px-3">60°</button>
+            <button onclick="setAnglePreset(90)" class="btn bg-slate-800 text-slate-200 hover:bg-sky-600 border border-slate-700 text-xs py-1.5 px-3">90°</button>
+            <button onclick="setAnglePreset(120)" class="btn bg-slate-800 text-slate-200 hover:bg-sky-600 border border-slate-700 text-xs py-1.5 px-3">120°</button>
+            <button onclick="setAnglePreset(180)" class="btn bg-slate-800 text-slate-200 hover:bg-sky-600 border border-slate-700 text-xs py-1.5 px-3">180°</button>
+        </div>
+    </header>
+
+    <!-- Question & Instructions Card -->
+    <div class="w-full max-w-7xl mx-auto mb-5 glass-card bg-gradient-to-r from-sky-950/40 via-slate-900/80 to-indigo-950/40 border-sky-500/20 py-3.5 px-5">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="space-y-1">
+                <span class="text-xs font-extrabold text-sky-400 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-amber-400"></i> Version 3 Controls Active
+                </span>
+                <p class="text-sm font-semibold text-slate-200">
+                    <strong class="text-sky-300">1. Drag</strong> any vertex of <span class="text-sky-400 font-bold">Preimage △ABC</span> OR <span class="text-emerald-400 font-bold">Image △A'B'C'</span> independently.
+                    <span class="mx-1.5">|</span>
+                    <strong class="text-amber-300">2. Zoom & Pan</strong> using mouse wheel or canvas controls.
+                    <span class="mx-1.5">|</span>
+                    <strong class="text-purple-300">3. Set Custom Angle</strong> using the slider below.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace Layout -->
+    <div class="w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-5">
+
+        <!-- Left Controls & Mathematical Proof Panel -->
+        <div class="w-full lg:w-5/12 flex flex-col gap-4">
+
+            <!-- Custom Rotation Angle Slider -->
+            <div class="glass-card">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-compass"></i> Rotation Angle Control
+                    </h3>
+                    <span id="angle-display-badge" class="text-xs font-extrabold code-font bg-sky-950 text-sky-300 px-2.5 py-1 rounded border border-sky-700">
+                        90° CCW
+                    </span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-400 font-bold">1°</span>
+                    <input type="range" id="angle-slider" min="1" max="359" value="90" oninput="onAngleSliderChange()" class="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer slider-thumb border border-slate-800">
+                    <span class="text-xs text-slate-400 font-bold">359°</span>
+                </div>
+                <div class="flex justify-between items-center mt-2 text-[11px] text-slate-400">
+                    <span>Adjusting slider rotates Image △A'B'C' around current COR</span>
+                    <button onclick="toggleDirection()" id="dir-btn" class="text-sky-400 font-bold underline hover:text-sky-300">
+                        Direction: CCW
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step-by-Step Concept Explorer -->
+            <div class="glass-card">
+                <h3 class="text-xs font-bold text-sky-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-list-check"></i> Guided Concept Explorer
+                </h3>
+
+                <!-- Step Tabs -->
+                <div class="grid grid-cols-4 gap-1.5 mb-3">
+                    <button onclick="setStep(1)" id="step-btn-1" class="btn btn-step active">1. Distance</button>
+                    <button onclick="setStep(2)" id="step-btn-2" class="btn btn-step">2. Bisector AA'</button>
+                    <button onclick="setStep(3)" id="step-btn-3" class="btn btn-step">3. Bisector BB'</button>
+                    <button onclick="setStep(4)" id="step-btn-4" class="btn btn-step">4. COR & Angle</button>
+                </div>
+
+                <!-- Active Explanation Box -->
+                <div class="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800 text-xs leading-relaxed space-y-1.5">
+                    <div id="step-title" class="font-bold text-sky-300 text-sm flex items-center gap-2">
+                        1. Equal Distance Property
+                    </div>
+                    <p id="step-desc" class="text-slate-300 leading-relaxed">
+                        In any rotation, every point stays at the <strong>exact same distance</strong> from the Center of Rotation (COR). Therefore, <code class="text-sky-300">d(A, COR) = d(A', COR)</code>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Mathematical Proof Breakdown -->
+            <div class="glass-card">
+                <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-square-root-variable"></i> Algebraic Verification
+                </h3>
+
+                <div class="space-y-3 text-xs">
+                    <!-- Line AA' Bisector -->
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-sky-400 font-bold">Line AA' Perpendicular Bisector:</span>
+                            <span class="text-[10px] bg-sky-950 text-sky-300 px-2 py-0.5 rounded border border-sky-800">Locus 1</span>
+                        </div>
+                        <div id="eq-a" class="code-font text-sky-300 font-bold text-sm my-0.5">Calculating...</div>
+                        <div id="mid-a" class="text-slate-400 text-[11px]">Midpoint M1: ...</div>
+                    </div>
+
+                    <!-- Line BB' Bisector -->
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-indigo-400 font-bold">Line BB' Perpendicular Bisector:</span>
+                            <span class="text-[10px] bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded border border-indigo-800">Locus 2</span>
+                        </div>
+                        <div id="eq-b" class="code-font text-indigo-300 font-bold text-sm my-0.5">Calculating...</div>
+                        <div id="mid-b" class="text-slate-400 text-[11px]">Midpoint M2: ...</div>
+                    </div>
+
+                    <!-- Intersection Result & Angle Calculation -->
+                    <div class="bg-emerald-950/30 p-3.5 rounded-xl border border-emerald-500/30 space-y-1.5">
+                        <div class="flex justify-between items-center">
+                            <span class="text-emerald-400 font-bold flex items-center gap-1.5">
+                                <i class="fa-solid fa-crosshairs"></i> Center of Rotation (COR):
+                            </span>
+                            <span id="cor-result" class="code-font text-emerald-300 font-bold text-sm">COR = (1.0, -2.0)</span>
+                        </div>
+                        <div class="flex justify-between items-center border-t border-emerald-500/20 pt-1.5">
+                            <span class="text-purple-300 font-bold flex items-center gap-1.5">
+                                <i class="fa-solid fa-rotate-right"></i> Calculated Angle (∠A-COR-A'):
+                            </span>
+                            <span id="angle-computed-badge" class="code-font text-purple-300 font-bold text-sm">90.0°</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Distance Verification HUD -->
+            <div class="glass-card">
+                <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-ruler"></i> Real-Time Distance Verification
+                </h3>
+                <div class="grid grid-cols-2 gap-2 text-xs code-font">
+                    <div class="bg-slate-950 p-2 rounded-lg border border-slate-800 text-center">
+                        <span class="text-slate-400 block text-[10px]">d(A, COR) = d(A', COR)</span>
+                        <span id="dist-a-check" class="text-sky-300 font-bold">7.07 units</span>
+                    </div>
+                    <div class="bg-slate-950 p-2 rounded-lg border border-slate-800 text-center">
+                        <span class="text-slate-400 block text-[10px]">d(B, COR) = d(B', COR)</span>
+                        <span id="dist-b-check" class="text-indigo-300 font-bold">3.61 units</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Interactive Canvas Panel -->
+        <div class="w-full lg:w-7/12 flex flex-col gap-4">
+            <div class="glass-card flex flex-col items-center relative">
+                
+                <!-- Canvas Title & Navigation Overlay Header -->
+                <div class="w-full flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-300">
+                            <i class="fa-solid fa-arrows-up-down-left-right text-amber-400 mr-1"></i> Drag Vertices or Canvas
+                        </span>
+                    </div>
+
+                    <!-- Zoom & View Controls -->
+                    <div class="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                        <button onclick="zoomIn()" title="Zoom In" class="w-7 h-7 rounded-lg bg-slate-800 text-slate-200 hover:bg-sky-600 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                        <button onclick="zoomOut()" title="Zoom Out" class="w-7 h-7 rounded-lg bg-slate-800 text-slate-200 hover:bg-sky-600 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                        <button onclick="resetView()" title="Reset View & Zoom" class="px-2.5 h-7 rounded-lg bg-slate-800 text-slate-200 hover:bg-sky-600 flex items-center justify-center text-xs font-bold">
+                            Reset
+                        </button>
+                        <span id="zoom-level-badge" class="text-[10px] code-font text-sky-400 font-bold px-1.5">100%</span>
+                    </div>
+                </div>
+
+                <!-- p5 Canvas Mount -->
+                <div id="canvas-container" class="w-full flex justify-center bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl relative">
+                    <!-- Canvas inserted here -->
+                </div>
+
+                <!-- Canvas Visual Layer Toggles -->
+                <div class="w-full flex flex-wrap items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-800/80">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-bold text-slate-400">Layers:</span>
+                        <label class="toggle-chip active" id="chip-segments">
+                            <input type="checkbox" id="toggle-segments" checked onchange="redrawCanvas()">
+                            <span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span>
+                            <span class="text-slate-200">Connectors (AA', BB')</span>
+                        </label>
+                        <label class="toggle-chip active" id="chip-bisectorA">
+                            <input type="checkbox" id="toggle-bisectorA" checked onchange="redrawCanvas()">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
+                            <span class="text-slate-200">Bisector AA'</span>
+                        </label>
+                        <label class="toggle-chip active" id="chip-bisectorB">
+                            <input type="checkbox" id="toggle-bisectorB" checked onchange="redrawCanvas()">
+                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 inline-block"></span>
+                            <span class="text-slate-200">Bisector BB'</span>
+                        </label>
+                        <label class="toggle-chip active" id="chip-arcs">
+                            <input type="checkbox" id="toggle-arcs" checked onchange="redrawCanvas()">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
+                            <span class="text-slate-200">Rotation Circles</span>
+                        </label>
+                    </div>
+
+                    <button onclick="animateRotation()" class="btn bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-1.5 px-3.5 shadow-lg shadow-emerald-600/20">
+                        <i class="fa-solid fa-rotate"></i> Test Rotation Spin
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Watermark -->
+    <div class="fixed bottom-3 right-4 text-[11px] text-slate-400 bg-slate-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-800 select-none z-50 font-medium tracking-wide shadow-xl">
+        Developed by <span class="text-sky-300 font-semibold">Charitarth Vyas</span> using <span class="text-sky-300 font-semibold">Gemini 3.6</span>
+    </div>
+
+    <script>
+        let currentStep = 1;
+
+        // Interactive Shapes State
+        // Triangle ABC (Preimage)
+        let ptA = { x: -6, y: -1 };
+        let ptB = { x: -1, y: 1 };
+        let ptC = { x: 1, y: 5 };
+
+        // Triangle A'B'C' (Image)
+        let ptA2 = { x: 0, y: 0 };
+        let ptB2 = { x: 0, y: 0 };
+        let ptC2 = { x: 0, y: 0 };
+
+        // Center of Rotation & Angle State
+        let corActual = { x: 1, y: -2 };
+        let currentAngle = 90; // degrees
+        let isCCW = true;
+
+        // Pan & Zoom State
+        let zoomLevel = 1.0;
+        let panX = 0;
+        let panY = 0;
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+
+        // Grid Scale
+        let gridExtent = 10;
+        let baseTileSize = 35;
+        let tileSize = 35;
+
+        let draggedNode = null; // 'A','B','C','A2','B2','C2','COR'
+        let isSpinning = false;
+        let spinProgress = 0;
+
+        function setup() {
+            let container = document.getElementById('canvas-container');
+            let w = container.offsetWidth || 550;
+            let canvas = createCanvas(w, w);
+            canvas.parent('canvas-container');
+
+            // Wheel zoom listener
+            canvas.mouseWheel(handleZoomWheel);
+
+            baseTileSize = w / (gridExtent * 2);
+            tileSize = baseTileSize * zoomLevel;
+
+            calculateInitialImagePoints();
+            updateCalculations();
+        }
+
+        function windowResized() {
+            let container = document.getElementById('canvas-container');
+            let w = container.offsetWidth || 550;
+            baseTileSize = w / (gridExtent * 2);
+            tileSize = baseTileSize * zoomLevel;
+            resizeCanvas(w, w);
+        }
+
+        function handleZoomWheel(event) {
+            if (event.deltaY < 0) {
+                zoomIn();
+            } else {
+                zoomOut();
+            }
+            return false; // prevent page scroll
+        }
+
+        function zoomIn() {
+            zoomLevel = min(zoomLevel * 1.15, 3.0);
+            updateZoom();
+        }
+
+        function zoomOut() {
+            zoomLevel = max(zoomLevel / 1.15, 0.4);
+            updateZoom();
+        }
+
+        function resetView() {
+            zoomLevel = 1.0;
+            panX = 0;
+            panY = 0;
+            updateZoom();
+        }
+
+        function updateZoom() {
+            tileSize = baseTileSize * zoomLevel;
+            document.getElementById('zoom-level-badge').innerText = Math.round(zoomLevel * 100) + "%";
+            redrawCanvas();
+        }
+
+        function setAnglePreset(angleVal) {
+            currentAngle = angleVal;
+            document.getElementById('angle-slider').value = angleVal;
+            document.getElementById('angle-display-badge').innerText = `${angleVal}° ${isCCW ? 'CCW' : 'CW'}`;
+            rotateImageToAngle();
+        }
+
+        function onAngleSliderChange() {
+            currentAngle = parseInt(document.getElementById('angle-slider').value) || 90;
+            document.getElementById('angle-display-badge').innerText = `${currentAngle}° ${isCCW ? 'CCW' : 'CW'}`;
+            rotateImageToAngle();
+        }
+
+        function toggleDirection() {
+            isCCW = !isCCW;
+            document.getElementById('dir-btn').innerText = `Direction: ${isCCW ? 'CCW' : 'CW'}`;
+            document.getElementById('angle-display-badge').innerText = `${currentAngle}° ${isCCW ? 'CCW' : 'CW'}`;
+            rotateImageToAngle();
+        }
+
+        function rotateImageToAngle() {
+            let effAngle = isCCW ? currentAngle : -currentAngle;
+            let rotatePt = (p) => {
+                let shiftX = p.x - corActual.x;
+                let shiftY = p.y - corActual.y;
+                let rad = radians(effAngle);
+                let rx = Math.round(shiftX * cos(rad) - shiftY * sin(rad));
+                let ry = Math.round(shiftX * sin(rad) + shiftY * cos(rad));
+                return { x: rx + corActual.x, y: ry + corActual.y };
+            };
+
+            ptA2 = rotatePt(ptA);
+            ptB2 = rotatePt(ptB);
+            ptC2 = rotatePt(ptC);
+
+            updateCalculations();
+        }
+
+        function calculateInitialImagePoints() {
+            rotateImageToAngle();
+        }
+
+        function setStep(step) {
+            currentStep = step;
+            for (let i = 1; i <= 4; i++) {
+                let btn = document.getElementById(`step-btn-${i}`);
+                if (btn) btn.className = (i === step) ? "btn btn-step active" : "btn btn-step";
+            }
+
+            let titles = [
+                "",
+                "1. Equal Distance Property",
+                "2. Perpendicular Bisector of AA'",
+                "3. Perpendicular Bisector of BB'",
+                "4. COR & Angle Calculation"
+            ];
+
+            let descs = [
+                "",
+                "A rotation moves every point along a circular path around the Center of Rotation (COR). Thus, the distance from A to COR must equal the distance from A' to COR.",
+                "The <strong>perpendicular bisector</strong> of segment AA' contains ALL points in the plane that are equidistant from A and A'. The COR <em>must</em> lie somewhere on this line!",
+                "Similarly, the perpendicular bisector of segment BB' contains ALL points equidistant from B and B'. The COR <em>must</em> also lie on this second line!",
+                "The unique <strong>intersection point</strong> of both perpendicular bisectors is the ONLY point equidistant from A & A' AND B & B'. This gives the exact Center of Rotation & Angle!"
+            ];
+
+            document.getElementById('step-title').innerText = titles[step];
+            document.getElementById('step-desc').innerHTML = descs[step];
+
+            document.getElementById('toggle-segments').checked = (step >= 1);
+            document.getElementById('toggle-bisectorA').checked = (step >= 2);
+            document.getElementById('toggle-bisectorB').checked = (step >= 3);
+            document.getElementById('toggle-arcs').checked = (step >= 1);
+
+            redrawCanvas();
+        }
+
+        function updateCalculations() {
+            // Calculate perpendicular bisectors of AA' and BB'
+            let m1 = { x: (ptA.x + ptA2.x) / 2, y: (ptA.y + ptA2.y) / 2 };
+            let dx1 = ptA2.x - ptA.x;
+            let dy1 = ptA2.y - ptA.y;
+
+            let m2 = { x: (ptB.x + ptB2.x) / 2, y: (ptB.y + ptB2.y) / 2 };
+            let dx2 = ptB2.x - ptB.x;
+            let dy2 = ptB2.y - ptB.y;
+
+            document.getElementById('mid-a').innerText = `Midpoint M1 = (${m1.x.toFixed(1)}, ${m1.y.toFixed(1)}), Vector AA' = (${dx1}, ${dy1})`;
+            document.getElementById('mid-b').innerText = `Midpoint M2 = (${m2.x.toFixed(1)}, ${m2.y.toFixed(1)}), Vector BB' = (${dx2}, ${dy2})`;
+
+            let eqAStr = formatLineEq(m1, dx1, dy1);
+            let eqBStr = formatLineEq(m2, dx2, dy2);
+
+            document.getElementById('eq-a').innerText = eqAStr;
+            document.getElementById('eq-b').innerText = eqBStr;
+
+            // Compute exact intersection point (COR) algebraically from midpoints & perp vectors
+            let calculatedCOR = computeIntersection(m1, -dy1, dx1, m2, -dy2, dx2);
+            if (calculatedCOR) {
+                corActual = calculatedCOR;
+            }
+
+            document.getElementById('cor-result').innerText = `COR = (${corActual.x.toFixed(1)}, ${corActual.y.toFixed(1)})`;
+
+            // Compute actual angle between vector (A - COR) and (A' - COR)
+            let v1x = ptA.x - corActual.x;
+            let v1y = ptA.y - corActual.y;
+            let v2x = ptA2.x - corActual.x;
+            let v2y = ptA2.y - corActual.y;
+
+            let ang1 = atan2(v1y, v1x);
+            let ang2 = atan2(v2y, v2x);
+            let diffDeg = degrees(ang2 - ang1);
+            if (diffDeg < 0) diffDeg += 360;
+
+            document.getElementById('angle-computed-badge').innerText = `${diffDeg.toFixed(1)}°`;
+
+            // Live Distance HUD Verification
+            let dA = dist(ptA.x, ptA.y, corActual.x, corActual.y);
+            let dB = dist(ptB.x, ptB.y, corActual.x, corActual.y);
+
+            document.getElementById('dist-a-check').innerText = `${dA.toFixed(2)} units`;
+            document.getElementById('dist-b-check').innerText = `${dB.toFixed(2)} units`;
+
+            redrawCanvas();
+        }
+
+        function computeIntersection(p1, v1x, v1y, p2, v2x, v2y) {
+            let det = v1x * v2y - v1y * v2x;
+            if (abs(det) < 0.0001) return null; // Lines are parallel
+
+            let dx = p2.x - p1.x;
+            let dy = p2.y - p1.y;
+            let t = (dx * v2y - dy * v2x) / det;
+
+            return {
+                x: p1.x + t * v1x,
+                y: p1.y + t * v1y
+            };
+        }
+
+        function formatLineEq(mid, dx, dy) {
+            if (dy === 0) {
+                return `x = ${mid.x.toFixed(1)}`;
+            } else if (dx === 0) {
+                return `y = ${mid.y.toFixed(1)}`;
+            } else {
+                let mPerp = -dx / dy;
+                let c = mid.y - mPerp * mid.x;
+                return `y = ${mPerp.toFixed(2)}x ${c >= 0 ? '+' : ''}${c.toFixed(2)}`;
+            }
+        }
+
+        function animateRotation() {
+            if (isSpinning) return;
+            isSpinning = true;
+            spinProgress = 0;
+        }
+
+        function redrawCanvas() {
+            redraw();
+        }
+
+        function screenToGrid(sx, sy) {
+            let cx = width / 2 + panX;
+            let cy = height / 2 + panY;
+            let gx = (sx - cx) / tileSize;
+            let gy = -(sy - cy) / tileSize;
+            return { x: gx, y: gy };
+        }
+
+        function mousePressed() {
+            let pos = screenToGrid(mouseX, mouseY);
+
+            let checkHit = (p) => dist(pos.x, pos.y, p.x, p.y) < (0.7 / zoomLevel);
+
+            if (checkHit(ptA)) draggedNode = 'A';
+            else if (checkHit(ptB)) draggedNode = 'B';
+            else if (checkHit(ptC)) draggedNode = 'C';
+            else if (checkHit(ptA2)) draggedNode = 'A2';
+            else if (checkHit(ptB2)) draggedNode = 'B2';
+            else if (checkHit(ptC2)) draggedNode = 'C2';
+            else if (checkHit(corActual)) draggedNode = 'COR';
+            else {
+                // If not clicking a node, enable canvas panning
+                isPanning = true;
+                panStartX = mouseX - panX;
+                panStartY = mouseY - panY;
+            }
+        }
+
+        function mouseDragged() {
+            if (isPanning) {
+                panX = mouseX - panStartX;
+                panY = mouseY - panStartY;
+                redrawCanvas();
+                return;
+            }
+
+            if (!draggedNode) return;
+
+            let pos = screenToGrid(mouseX, mouseY);
+            let gridX = Math.round(pos.x);
+            let gridY = Math.round(pos.y);
+
+            let maxExtent = gridExtent * 2;
+            gridX = constrain(gridX, -maxExtent, maxExtent);
+            gridY = constrain(gridY, -maxExtent, maxExtent);
+
+            if (draggedNode === 'A') ptA = { x: gridX, y: gridY };
+            else if (draggedNode === 'B') ptB = { x: gridX, y: gridY };
+            else if (draggedNode === 'C') ptC = { x: gridX, y: gridY };
+            else if (draggedNode === 'A2') ptA2 = { x: gridX, y: gridY };
+            else if (draggedNode === 'B2') ptB2 = { x: gridX, y: gridY };
+            else if (draggedNode === 'C2') ptC2 = { x: gridX, y: gridY };
+            else if (draggedNode === 'COR') {
+                corActual = { x: gridX, y: gridY };
+                rotateImageToAngle();
+                return;
+            }
+
+            updateCalculations();
+        }
+
+        function mouseReleased() {
+            draggedNode = null;
+            isPanning = false;
+        }
+
+        function draw() {
+            background(9, 13, 22);
+
+            push();
+            translate(width / 2 + panX, height / 2 + panY);
+            scale(1, -1);
+
+            drawGrid();
+
+            let showSegs = document.getElementById('toggle-segments').checked;
+            let showBisA = document.getElementById('toggle-bisectorA').checked;
+            let showBisB = document.getElementById('toggle-bisectorB').checked;
+            let showArcs = document.getElementById('toggle-arcs').checked;
+
+            // Draw Rotation Circles / Arcs
+            if (showArcs) {
+                drawRotationCircle(ptA);
+                drawRotationCircle(ptB);
+                drawRotationCircle(ptC);
+            }
+
+            // Draw Preimage Shape ABC
+            drawTriangle([ptA, ptB, ptC], [56, 189, 248, 140], [56, 189, 248], "", false);
+
+            // Draw Image Shape A'B'C'
+            if (isSpinning) {
+                spinProgress += 0.025;
+                let effAngle = isCCW ? currentAngle : -currentAngle;
+                let currentRot = spinProgress * effAngle;
+                let animatedA = rotatePointAround(ptA, corActual, currentRot);
+                let animatedB = rotatePointAround(ptB, corActual, currentRot);
+                let animatedC = rotatePointAround(ptC, corActual, currentRot);
+
+                drawTriangle([animatedA, animatedB, animatedC], [16, 185, 129, 180], [110, 231, 183], "'", false);
+
+                if (spinProgress >= 1) {
+                    isSpinning = false;
+                }
+            } else {
+                drawTriangle([ptA2, ptB2, ptC2], [16, 185, 129, 180], [110, 231, 183], "'", false);
+            }
+
+            // Draw Connecting Segments AA' and BB'
+            if (showSegs) {
+                drawSegment(ptA, ptA2, [56, 189, 248]);
+                drawSegment(ptB, ptB2, [129, 140, 248]);
+            }
+
+            // Draw Perpendicular Bisector for AA'
+            if (showBisA) {
+                drawPerpendicularBisector(ptA, ptA2, [245, 158, 11]);
+            }
+
+            // Draw Perpendicular Bisector for BB'
+            if (showBisB) {
+                drawPerpendicularBisector(ptB, ptB2, [129, 140, 248]);
+            }
+
+            // Draw Center of Rotation Point
+            drawCORPoint();
+
+            pop();
+        }
+
+        function rotatePointAround(p, center, angleDeg) {
+            let shiftX = p.x - center.x;
+            let shiftY = p.y - center.y;
+            let rad = radians(angleDeg);
+            let rx = shiftX * cos(rad) - shiftY * sin(rad);
+            let ry = shiftX * sin(rad) + shiftY * cos(rad);
+            return { x: rx + center.x, y: ry + center.y };
+        }
+
+        function drawGrid() {
+            stroke(30, 41, 59, 180);
+            strokeWeight(1);
+
+            let ext = Math.ceil(gridExtent * 2 / zoomLevel);
+
+            for (let i = -ext; i <= ext; i++) {
+                line(i * tileSize, -ext * tileSize, i * tileSize, ext * tileSize);
+                line(-ext * tileSize, i * tileSize, ext * tileSize, i * tileSize);
+            }
+
+            // Cartesian Axes
+            stroke(56, 189, 248, 160);
+            strokeWeight(2);
+            line(0, -ext * tileSize, 0, ext * tileSize);
+            line(-ext * tileSize, 0, ext * tileSize, 0);
+
+            // Numbers on Axes
+            push();
+            scale(1, -1);
+            fill(148, 163, 184);
+            noStroke();
+            textSize(10);
+            textAlign(CENTER, CENTER);
+            let stepVal = zoomLevel < 0.6 ? 4 : 2;
+            for (let i = -ext; i <= ext; i += stepVal) {
+                if (i !== 0) {
+                    text(i, i * tileSize, 12);
+                    text(i, -12, -i * tileSize);
+                }
+            }
+            pop();
+        }
+
+        function drawTriangle(pts, fillColor, strokeColor, labelSuffix = "", isDashed = false) {
+            push();
+            fill(fillColor[0], fillColor[1], fillColor[2], fillColor[3]);
+            stroke(strokeColor[0], strokeColor[1], strokeColor[2]);
+            strokeWeight(2.5);
+
+            beginShape();
+            for (let p of pts) {
+                vertex(p.x * tileSize, p.y * tileSize);
+            }
+            endShape(CLOSE);
+
+            let labels = ["A", "B", "C"];
+            for (let i = 0; i < pts.length; i++) {
+                let p = pts[i];
+                fill(255);
+                stroke(strokeColor[0], strokeColor[1], strokeColor[2]);
+                strokeWeight(2);
+                circle(p.x * tileSize, p.y * tileSize, 7);
+
+                push();
+                scale(1, -1);
+                fill(strokeColor[0], strokeColor[1], strokeColor[2]);
+                noStroke();
+                textSize(11);
+                textStyle(BOLD);
+                textAlign(LEFT, BOTTOM);
+                let label = labels[i] + labelSuffix;
+                text(`${label}(${p.x.toFixed(0)}, ${p.y.toFixed(0)})`, p.x * tileSize + 8, -p.y * tileSize - 6);
+                pop();
+            }
+            pop();
+        }
+
+        function drawSegment(p1, p2, col) {
+            push();
+            stroke(col[0], col[1], col[2], 200);
+            strokeWeight(2);
+            line(p1.x * tileSize, p1.y * tileSize, p2.x * tileSize, p2.y * tileSize);
+
+            let mx = (p1.x + p2.x) / 2;
+            let my = (p1.y + p2.y) / 2;
+            fill(col[0], col[1], col[2]);
+            noStroke();
+            circle(mx * tileSize, my * tileSize, 6);
+            pop();
+        }
+
+        function drawPerpendicularBisector(p1, p2, col) {
+            push();
+            let mx = (p1.x + p2.x) / 2;
+            let my = (p1.y + p2.y) / 2;
+
+            let dx = p2.x - p1.x;
+            let dy = p2.y - p1.y;
+
+            let perpX = -dy;
+            let perpY = dx;
+
+            let len = sqrt(perpX * perpX + perpY * perpY);
+            if (len === 0) return;
+
+            perpX /= len;
+            perpY /= len;
+
+            let scaleFactor = gridExtent * 4 / zoomLevel;
+            let xA = (mx - perpX * scaleFactor) * tileSize;
+            let yA = (my - perpY * scaleFactor) * tileSize;
+            let xB = (mx + perpX * scaleFactor) * tileSize;
+            let yB = (my + perpY * scaleFactor) * tileSize;
+
+            stroke(col[0], col[1], col[2], 230);
+            strokeWeight(2.5);
+            line(xA, yA, xB, yB);
+
+            drawRightAngleSymbol(mx, my, dx, dy, col);
+            pop();
+        }
+
+        function drawRightAngleSymbol(mx, my, dx, dy, col) {
+            push();
+            let len = sqrt(dx * dx + dy * dy);
+            if (len === 0) return;
+
+            let uX = dx / len;
+            let uY = dy / len;
+
+            let pX = -uY;
+            let pY = uX;
+
+            let sz = 0.4 * tileSize;
+
+            let p1X = (mx) * tileSize + uX * sz;
+            let p1Y = (my) * tileSize + uY * sz;
+
+            let p2X = p1X + pX * sz;
+            let p2Y = p1Y + pY * sz;
+
+            let p3X = (mx) * tileSize + pX * sz;
+            let p3Y = (my) * tileSize + pY * sz;
+
+            noFill();
+            stroke(col[0], col[1], col[2]);
+            strokeWeight(1.5);
+            beginShape();
+            vertex(p1X, p1Y);
+            vertex(p2X, p2Y);
+            vertex(p3X, p3Y);
+            endShape();
+            pop();
+        }
+
+        function drawRotationCircle(p) {
+            push();
+            noFill();
+            stroke(56, 189, 248, 50);
+            strokeWeight(1.2);
+            let r = dist(p.x, p.y, corActual.x, corActual.y) * tileSize;
+            circle(corActual.x * tileSize, corActual.y * tileSize, r * 2);
+            pop();
+        }
+
+        function drawCORPoint() {
+            push();
+            fill(16, 185, 129);
+            stroke(255);
+            strokeWeight(3);
+            circle(corActual.x * tileSize, corActual.y * tileSize, 14);
+
+            push();
+            scale(1, -1);
+            fill(110, 231, 183);
+            noStroke();
+            textSize(12);
+            textStyle(BOLD);
+            textAlign(CENTER, TOP);
+            text(`COR (${corActual.x.toFixed(1)}, ${corActual.y.toFixed(1)})`, corActual.x * tileSize, -corActual.y * tileSize + 12);
+            pop();
+            pop();
+        }
+    </script>
+</body>
+</html>
